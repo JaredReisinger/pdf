@@ -11,7 +11,7 @@ if [ "$(grep -v '^#' $1 | wc --max-line-length)" -eq "0" ]; then
   # equivalent tools seem to make this mistake, which makes them less ideal as
   # tooling building blocks.  (It also doesn't take the COMMIT_MSG filename
   # argument as it should.)
-  exec < /dev/tty && go run github.com/shipengqi/commitizen
+  exec < /dev/tty && go run github.com/shipengqi/commitizen -- --dry-run
   # exec < /dev/tty && go run github.com/JosephNaberhaus/go-mitizen
   # exec < /dev/tty && go run github.com/lintingzhen/commitizen-go
 fi
