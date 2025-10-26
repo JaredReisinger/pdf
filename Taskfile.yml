@@ -1,0 +1,83 @@
+version: "3"
+
+# Since this is a library, we don't really build anything regularly... our
+# distribution is the raw source-code itself.  Nonetheless, we have tasks for
+# useful things like testing, running the example, etc.
+
+vars:
+  COVERAGE_DIR: ./coverage
+
+tasks:
+  default:
+    cmds:
+      - task: run
+
+  # The git hooks initialization isn't quite as streamlined as in Node/npm,
+  # where the package creator can "force install" the husky hooks during the
+  # "npm install" stage (which is a necessary precursor to doing any sort of
+  # development).  To approximate that, we have a "prepare" task that does the
+  # equivalent one-time local repo setup.  (Except for "task" itself, which is
+  # an annoying chicken-and-egg problem.)
+  prepare:
+    desc: One-time local repo setup
+    cmds:
+      - go mod download
+      # - go run -v github.com/automation-co/husky install
+      - git config set --local core.hooksPath .hooks
+
+  clean:
+    desc: Clean project
+    cmds:
+      - rm -rf {{.COVERAGE_DIR}}
+      - rm -rf .task
+
+  coveragedir:
+    desc: Create coverage directory
+    cmds:
+      - mkdir {{.COVERAGE_DIR}}
+    status:
+      - test -d {{.COVERAGE_DIR}}
+
+  test:
+    desc: Test project
+    deps:
+      - coveragedir
+    cmds:
+      - go test -coverprofile {{.COVERAGE_DIR}}/cover.out ./...
+      - go tool cover -html {{.COVERAGE_DIR}}/cover.out -o {{.COVERAGE_DIR}}/coverage.html
+
+  security:
+    desc: Run gosec for project
+    cmds:
+      - go run github.com/securego/gosec/v2/cmd/gosec -quiet ./...
+
+  pre-commit:
+    desc: Run pre-commit checks...
+    deps:
+      - test
+      # - security ## bogus internal error in gosec?
+    cmds:
+      - go vet ./...
+
+  example:help:
+    desc: Quick-run the example to show help
+    aliases: [help]
+    cmds:
+      - go run example/main.go --help
+
+  example:run:
+    desc: Run the example
+    aliases: [run]
+    cmds:
+      - go run example/main.go
+
+  example:run:config:
+    desc: Run the example
+    # aliases: [run]
+    cmds:
+      - go run example/main.go --config example/ad-hoc-config.yaml
+
+  release:
+    desc: Run a snapshot (test) release
+    cmds:
+      - goreleaser release --snapshot --clean
