@@ -9,6 +9,13 @@
         "mitizen",
         "Naberhaus",
         "securego",
+        "shipengqi",
         "Taskfile"
-    ]
+    ],
+    "go.coverOnSave": false,
+    "go.coverageOptions": "showUncoveredCodeOnly",
+    "testing.coverageToolbarEnabled": true,
+    "go.coverOnSingleTest": true,
+    "go.coverOnSingleTestFile": true,
+    "go.coverShowCounts": false
 }

@@ -4,7 +4,8 @@
 package tools
 
 import (
-	_ "github.com/automation-co/husky"
+	// no longer using husky... the "prepare" task just sets the core.hooksPath
+	// _ "github.com/automation-co/husky"
 
 	// See the comment in Taskfile.yml's "prepare" task.  We can't use task to
 	// acquire/setup task itself. :sadpanda:
@@ -14,8 +15,8 @@ import (
 
 	// lintingzhen/commitizen-go seems to be failing...
 	// _ "github.com/lintingzhen/commitizen-go"
-
-	_ "github.com/JosephNaberhaus/go-mitizen"
+	// _ "github.com/JosephNaberhaus/go-mitizen"
+	_ "github.com/shipengqi/commitizen"
 
 	// We don't need goreleaser as a tool, since it's only used in CI... we're
 	// using a GitHub Action to get it.

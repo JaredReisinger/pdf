@@ -68,8 +68,9 @@ tasks:
   example:run:
     desc: Run the example
     aliases: [run]
+    dir: example
     cmds:
-      - go run example/main.go
+      - go run main.go
 
   example:run:config:
     desc: Run the example

@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"maps"
 	"slices"
-	"sync/atomic"
 )
 
 func WriteValueTo(w io.Writer, el any) (int64, error) {
@@ -40,6 +39,8 @@ func WriteValueTo(w io.Writer, el any) (int64, error) {
 		return WriteArrayTo(w, val)
 	case map[string]any:
 		return WriteDictionaryTo(w, val)
+	case []byte:
+		return WriteByteArrayTo(w, val)
 	default:
 		slog.Error("unknown array type", "value", el)
 		panic("NEED TO ADD TYPE FORMATTING")
@@ -69,7 +70,6 @@ func WriteStringTo(w io.Writer, s string) (int64, error) {
 			if c > 255 {
 				// need to handle big unicode? into octal
 				panic("???")
-
 			}
 			n, err = retShim(fmt.Fprintf(w, "%c", c))
 		}
@@ -203,79 +203,34 @@ func WriteDictionaryTo(w io.Writer, dict map[string]any) (int64, error) {
 	return written, nil
 }
 
-// // See 7.3.8
-// func WriteStreamTo(w io.Writer, dict map[string]any, b []byte) (int64, error) {
-// 	var written int64
-
-// 	// We need to auto-graft the "/Length" in, but only if it's not already
-// 	// present.
-// 	if _, ok := dict["Length"]; !ok {
-// 		dict["Length"] = len(b)
-// 	}
-// 	n, err := WriteDictionaryTo(w, dict)
-// 	written += n
-// 	if err != nil {
-// 		return written, err
-// 	}
-
-// 	n, err = writeStuffTo(w,
-// 		[]byte("\nstream\n"),
-// 		b,
-// 		[]byte("\nendstream\n"),
-// 	)
-// 	written += n
-// 	if err != nil {
-// 		return written, err
-// 	}
-
-// 	return written, nil
-// }
+func WriteByteArrayTo(w io.Writer, b []byte) (int64, error) {
+	return retShim(fmt.Fprintf(w, "<%x>", b))
+}
 
 // Name is a utility type to flag a string specifically as a PDF "Name" value.
 type Name string
 
-type ObjectReference struct {
+type objectID struct {
+	p          *PDF
 	id         uint64
-	generation uint
+	generation uint // we never use generation; should we even have this member?
 }
 
-// func (o *ObjectReference) Write(w Writer) {
-func (o ObjectReference) WriteTo(w io.Writer) (int64, error) {
-	return retShim(fmt.Fprintf(w, "%d %d R", o.id, o.generation))
-}
-
-type Object struct {
-	idGen ObjectReference
-	value any
-}
-
-var objectCounter atomic.Uint64
-
-func NewObject(value any) Object {
-	return Object{
-		idGen: ObjectReference{
-			id:         objectCounter.Add(1),
-			generation: 0,
-		},
-		value: value,
-	}
-}
-
-func (o Object) WriteTo(w io.Writer) (int64, error) {
+func (o objectID) writeStartTo(w io.Writer) (int64, error) {
 	var written int64
-	n, err := retShim(fmt.Fprintf(w, "%d %d obj\n", o.idGen.id, o.idGen.generation))
+
+	n, err := retShim(w.Write([]byte("\n")))
 	written += n
 	if err != nil {
 		return written, err
 	}
 
-	n, err = WriteValueTo(w, o.value)
-	written += n
-	if err != nil {
-		return written, err
+	// *if* we're writing a PDF, we need to track the offset!
+	if ww, ok := w.(*writer); ok && o.p != nil {
+		ww.p.objectOffsets[o.id] = ww.Offset()
 	}
 
-	n, err = retShim(w.Write([]byte("\nendobj\n")))
+	n, err = retShim(fmt.Fprintf(w, "%d %d obj\n", o.id, o.generation))
 	written += n
 	if err != nil {
 		return written, err
@@ -284,13 +239,28 @@ func (o Object) WriteTo(w io.Writer) (int64, error) {
 	return written, nil
 }
 
-func (o Object) WriteReference(w io.Writer) (int64, error) {
-	return o.idGen.WriteTo(w)
+func (o objectID) writeEndTo(w io.Writer) (int64, error) {
+	return retShim(w.Write([]byte("\nendobj\n")))
 }
 
-func (o Object) Reference() ObjectReference {
-	return o.idGen
+func (o objectID) Reference() io.WriterTo {
+	return objectReference(o)
 }
+
+type objectReference objectID
+
+// func (o *ObjectReference) Write(w Writer) {
+func (o objectReference) WriteTo(w io.Writer) (int64, error) {
+	return retShim(fmt.Fprintf(w, "%d %d R", o.id, o.generation))
+}
+
+// func (o objectReference) Reference() io.WriterTo {
+// 	return o
+// }
+
+// type ObjectReference interface {
+// 	Reference() io.WriterTo
+// }
 
 type Stream struct {
 	Dictionary map[string]any
