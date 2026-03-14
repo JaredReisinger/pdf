@@ -23,6 +23,7 @@ type PDF struct {
 	catalog  *Catalog
 	pageTree *PageTree
 	pages    []*Page
+	fonts    []*Font
 
 	// writing metadata
 	objectOffsets  map[uint64]uint64
@@ -78,6 +79,14 @@ func (p *PDF) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
+	for _, font := range p.fonts {
+		n, err = font.WriteTo(w2)
+		written += n
+		if err != nil {
+			return written, err
+		}
+	}
+
 	// // TODO: other parts
 	// n, err = p.writeObjects(w2)
 	// written += n
@@ -103,7 +112,7 @@ func (p *PDF) WriteTo(w io.Writer) (int64, error) {
 
 func (p *PDF) writeHeader(w *writer) (int64, error) {
 	// See 7.5.2, File header
-	return writeStuffTo(w,
+	return writeBytesSlicesTo(w,
 		[]byte("%PDF-2.0\n"),
 		// include a comment with 4 binary (> 128) bytes
 		[]byte("%æìöú"), // haha! "aeiou"!
@@ -129,14 +138,14 @@ func (p *PDF) writeHeader(w *writer) (int64, error) {
 func (p *PDF) writeCrossReferenceTable(w *writer) (int64, error) {
 	var written int64
 
-	n, err := writeStuffTo(w, []byte("\n"))
+	n, err := writeBytesSlicesTo(w, []byte("\n"))
 	written += n
 	if err != nil {
 		return written, err
 	}
 
 	p.lastXrefOffset = w.Offset()
-	n, err = writeStuffTo(w, []byte("xref\n"))
+	n, err = writeBytesSlicesTo(w, []byte("xref\n"))
 	written += n
 	if err != nil {
 		return written, err
@@ -177,7 +186,7 @@ func (p *PDF) writeFooter(w *writer) (int64, error) {
 		"ID":   []any{fileIdentifier, fileIdentifier},
 	}
 
-	n, err := writeStuffTo(w, []byte("\ntrailer\n"))
+	n, err := writeBytesSlicesTo(w, []byte("\ntrailer\n"))
 	written += n
 	if err != nil {
 		return written, err
@@ -188,7 +197,7 @@ func (p *PDF) writeFooter(w *writer) (int64, error) {
 		return written, err
 	}
 
-	n, err = writeStuffTo(w,
+	n, err = writeBytesSlicesTo(w,
 		[]byte("\nstartxref\n"),
 		[]byte(fmt.Sprintf("%d", p.lastXrefOffset)),
 	)
@@ -197,7 +206,7 @@ func (p *PDF) writeFooter(w *writer) (int64, error) {
 		return written, err
 	}
 
-	return writeStuffTo(w,
+	return writeBytesSlicesTo(w,
 		[]byte("\n%%EOF"),
 	)
 }

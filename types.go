@@ -7,6 +7,9 @@ import (
 	"log/slog"
 	"maps"
 	"slices"
+	"strings"
+
+	"golang.org/x/image/math/fixed"
 )
 
 func WriteValueTo(w io.Writer, el any) (int64, error) {
@@ -31,6 +34,11 @@ func WriteValueTo(w io.Writer, el any) (int64, error) {
 		// TODO: optimize formatting? Using %g means it *could* use exponent
 		// notation, but in practice, we should never have values that big.
 		return retShim(fmt.Fprintf(w, "%g", val))
+	case fixed.Int26_6:
+		// we convert to float64... dividing by 64.0 is the trick, as the
+		// integer portion of left-shifted by 6 bits, effectively multiplied by
+		// 64.
+		return retShim(fmt.Fprintf(w, "%g", float64(val)/64.0))
 	case string:
 		return WriteStringTo(w, val)
 	case Name:
@@ -166,10 +174,11 @@ func WriteDictionaryTo(w io.Writer, dict map[string]any) (int64, error) {
 	// Go intentionally randomizes the order of map iteration... do we want to
 	// provide a normalized order?  We may want our own slices.Sorted() style
 	// implementation to put things like /Type first!
-	for i, k := range slices.Sorted(maps.Keys(dict)) {
+	for i, k := range slices.SortedFunc(maps.Keys(dict), dictKeyCmp) {
 		if i > 0 {
-			// n, err = retShim(w.Write([]byte("\n\t")))
-			n, err = retShim(w.Write([]byte(" ")))
+			// use \n\t for debugging...
+			n, err = retShim(w.Write([]byte("\n\t")))
+			// n, err = retShim(w.Write([]byte(" ")))
 			written += n
 			if err != nil {
 				return written, err
@@ -201,6 +210,21 @@ func WriteDictionaryTo(w io.Writer, dict map[string]any) (int64, error) {
 	}
 
 	return written, nil
+}
+
+// dictKeyCmp is a comparison/sorting function for dictionary keys that puts
+// certain well-known keys at the very beginning
+func dictKeyCmp(a, b string) int {
+	for _, s := range []string{"Type", "Subtype"} {
+		if a == s {
+			return -1
+		}
+		if b == s {
+			return 1
+		}
+	}
+
+	return strings.Compare(a, b)
 }
 
 func WriteByteArrayTo(w io.Writer, b []byte) (int64, error) {
@@ -295,7 +319,7 @@ func (s *Stream) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
-	n, err = writeStuffTo(w,
+	n, err = writeBytesSlicesTo(w,
 		[]byte("\nstream\n"),
 		b,
 		[]byte("\nendstream\n"),
@@ -312,7 +336,39 @@ func (s *Stream) WriteTo(w io.Writer) (int64, error) {
 // (int64, error). This is truly obnoxious. We *also* often need to write a
 // sequence of things, and capturing the length each time is obnoxious... so we
 // have a helper that manages both of the above.
-func writeStuffTo(w io.Writer, bs ...[]byte) (int64, error) {
+func writeStuffTo(w io.Writer, writerTos ...io.WriterTo) (int64, error) {
+	var written, n int64
+	var err error
+
+	for _, writerTo := range writerTos {
+		// we don't use retShim here just to avoid the additional call
+		n, err = writerTo.WriteTo(w)
+		written += n
+		if err != nil {
+			return written, err
+		}
+	}
+	return written, nil
+}
+
+type writeToFunc func(w io.Writer) (int64, error)
+
+func writeFuncsTo(w io.Writer, writerToFuncs ...writeToFunc) (int64, error) {
+	var written, n int64
+	var err error
+
+	for _, writerToFunc := range writerToFuncs {
+		// we don't use retShim here just to avoid the additional call
+		n, err = writerToFunc(w)
+		written += n
+		if err != nil {
+			return written, err
+		}
+	}
+	return written, nil
+}
+
+func writeBytesSlicesTo(w io.Writer, bs ...[]byte) (int64, error) {
 	var written int64
 	for _, b := range bs {
 		// we don't use retShim here just to avoid the additional call

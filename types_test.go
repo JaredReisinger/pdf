@@ -74,7 +74,7 @@ func TestWriteObjectStartEnd(t *testing.T) {
 func TestWriteStuffTo(t *testing.T) {
 	var s strings.Builder
 
-	n, err := writeStuffTo(&s,
+	n, err := writeBytesSlicesTo(&s,
 		[]byte("abc"),
 		[]byte("123"),
 		[]byte("abc"),

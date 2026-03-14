@@ -52,7 +52,7 @@ func (c *Content) WriteTo(w io.Writer) (int64, error) {
 		return written, err
 	}
 
-	n, err = writeStuffTo(w,
+	n, err = writeBytesSlicesTo(w,
 		[]byte("\nstream\n"),
 		b,
 		[]byte("\nendstream"),

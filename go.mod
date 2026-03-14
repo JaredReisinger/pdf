@@ -7,6 +7,7 @@ require (
 	github.com/securego/gosec/v2 v2.22.10
 	github.com/shipengqi/commitizen v1.3.0
 	github.com/stretchr/testify v1.11.1
+	github.com/unidoc/unipdf/v3 v3.69.0
 	golang.org/x/image v0.32.0
 )
 
@@ -30,6 +31,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
@@ -56,12 +58,17 @@ require (
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shipengqi/component-base v0.2.9 // indirect
 	github.com/shipengqi/golib v0.2.12 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cobra v1.8.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/tidwall/gjson v1.18.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/sjson v1.2.5 // indirect
+	github.com/unidoc/freetype v0.2.3 // indirect
+	github.com/unidoc/pkcs7 v0.2.0 // indirect
+	github.com/unidoc/timestamp v0.0.0-20200412005513-91597fd3793a // indirect
+	github.com/unidoc/unitype v0.5.1 // indirect
 	github.com/urfave/cli/v2 v2.11.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
@@ -78,6 +85,7 @@ require (
 	golang.org/x/term v0.36.0 // indirect
 	golang.org/x/text v0.30.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
+	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	google.golang.org/genai v1.30.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250818200422-3122310a409c // indirect
 	google.golang.org/grpc v1.75.0 // indirect

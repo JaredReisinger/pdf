@@ -13,3 +13,12 @@ I've tried to avoid things like "creating the PDF object construct" until the la
 ## Serializing
 
 In general, the lower-level PDF constructs implement the `io.WriterTo` interface, signalling that they know how to write themselves to an `io.Writer`.  Higher-level constructs, like the PDF file itself, use a wrapper around `io.Writer` that keeps track of byte offsets since several PDF implementation details relay on knowing the offset of PDF objects.
+
+
+## Other useful references
+
+- https://opensource.adobe.com/dc-acrobat-sdk-docs/pdflsdk/index.html
+
+  - (2008 PDF reference) https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf ; font information starts in section 9.5 on page 253.
+
+- https://blog.loslab.com/en/pdf-structure/pdf-text-font-handling-with-code-examples-best-bractices
